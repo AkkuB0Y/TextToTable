@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+anthropic
+openai-whisper
+python-multipart
+pydantic
+aiofiles
+faker
+pytest
+httpx
