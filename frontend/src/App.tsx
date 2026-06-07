@@ -44,17 +44,29 @@ function App() {
             )}
 
             {response && (
-              <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-accent-glow">Backend Response</h3>
-                  <span className="px-4 py-1.5 rounded-full bg-teal-500/10 text-teal-400 text-sm font-medium border border-teal-500/20">
-                    Success
-                  </span>
+              <div className="flex flex-col gap-6">
+                {/* Transcript Bubble */}
+                <div className="flex flex-col items-center mb-4 animate-fade-in-up">
+                  <span className="text-xs text-neutral-500 uppercase tracking-widest mb-2 font-medium">You asked</span>
+                  <div className="px-6 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 shadow-lg">
+                    <p className="text-xl font-medium text-white tracking-wide">
+                      "{response.transcript || 'No transcript available'}"
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-black rounded-lg p-4 border border-neutral-800">
-                  <pre className="text-sm text-neutral-300 response-area font-mono whitespace-pre-wrap">
-                    {JSON.stringify(response, null, 2)}
-                  </pre>
+
+                <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-medium text-accent-glow">Backend Response</h3>
+                    <span className="px-4 py-1.5 rounded-full bg-teal-500/10 text-teal-400 text-sm font-medium border border-teal-500/20">
+                      Success
+                    </span>
+                  </div>
+                  <div className="bg-black rounded-lg p-4 border border-neutral-800">
+                    <pre className="text-sm text-neutral-300 response-area font-mono whitespace-pre-wrap">
+                      {JSON.stringify(response, null, 2)}
+                    </pre>
+                  </div>
                 </div>
               </div>
             )}

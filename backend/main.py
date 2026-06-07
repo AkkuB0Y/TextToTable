@@ -2,11 +2,13 @@
 Voice-to-Dashboard — FastAPI backend entry point.
 
 Phase 1: Health check, DB setup, query stub.
+Phase 3: Whisper transcription + text normalization.
 """
 
 from __future__ import annotations
 
 import sqlite3
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -14,6 +16,8 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import HealthResponse, QueryResult, VizSpec, VizType
+from pipeline.transcriber import transcribe, preload_model
+from pipeline.normalizer import normalize
 
 # ─── Database ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +58,7 @@ def ensure_db() -> None:
 async def lifespan(app: FastAPI):
     """Application startup/shutdown lifecycle."""
     ensure_db()
+    preload_model()  # Phase 3: pre-warm Whisper so first query is fast
     yield
 
 
@@ -62,7 +67,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Voice-to-Dashboard API",
     description="Speak a question, get a dashboard back.",
-    version="0.1.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -101,11 +106,32 @@ async def health_check():
 async def query_dashboard(audio: UploadFile = File(...)):
     """
     Process a voice query and return dashboard data.
-    
-    Phase 1 stub: returns hardcoded sample data.
-    Later phases will add: transcription → SQL generation → execution → viz selection.
+
+    Phase 3: transcribes audio via Whisper, normalizes the text.
+    Still returns hardcoded viz data — Phase 4 will add SQL generation.
     """
-    # Phase 1: return hardcoded sample result
+    # ── Step 1: Save uploaded audio to a temp file ──────────────────────────
+    suffix = Path(audio.filename or "query.webm").suffix or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        contents = await audio.read()
+        tmp.write(contents)
+        tmp_path = tmp.name
+
+    try:
+        # ── Step 2: Transcribe with Whisper ─────────────────────────────────
+        raw_transcript = transcribe(tmp_path)
+        print(f"📝 Raw transcript: {raw_transcript}")
+
+        # ── Step 3: Normalize (remove fillers, lowercase, clean up) ─────────
+        cleaned_transcript = normalize(raw_transcript)
+        print(f"✨ Cleaned transcript: {cleaned_transcript}")
+
+    finally:
+        # ── Step 4: Clean up temp file ──────────────────────────────────────
+        Path(tmp_path).unlink(missing_ok=True)
+
+    # Phase 3: Return real transcript with stub viz data.
+    # Phase 4+ will replace the hardcoded rows with real SQL results.
     sample_rows = [
         {"region": "North America", "total_revenue": 125430.50, "order_count": 5200},
         {"region": "Europe", "total_revenue": 98210.75, "order_count": 4100},
@@ -125,7 +151,7 @@ async def query_dashboard(audio: UploadFile = File(...)):
             summary="North America leads with $125K in total revenue, followed by Europe at $98K.",
         ),
         sql="SELECT region, SUM(amount) as total_revenue, COUNT(*) as order_count FROM orders GROUP BY region",
-        transcript="show me revenue by region",
+        transcript=cleaned_transcript,
     )
 
 

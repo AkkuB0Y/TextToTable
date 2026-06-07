@@ -1,10 +1,13 @@
 """
-Phase 1 tests — verify server starts, health returns 200, DB has data.
+Phase 1 & 3 tests — verify server starts, health returns 200, DB has data,
+and the /query endpoint transcribes audio correctly.
 
 Run with: python -m pytest backend/tests/test_health.py -v
 """
 
 import sqlite3
+import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -17,12 +20,37 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from main import app, DB_PATH
 
 
+# ─── Fixtures ───────────────────────────────────────────────────────────────────
+
 @pytest.fixture(scope="module")
 def client():
     """Create a test client with the FastAPI app."""
     with TestClient(app) as c:
         yield c
 
+
+@pytest.fixture(scope="module")
+def valid_audio_bytes():
+    """Generate a valid 1-second silent WAV file for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", "anullsrc=r=16000:cl=mono",
+            "-t", "1", tmp_path,
+        ],
+        capture_output=True,
+        check=True,
+    )
+
+    audio_bytes = Path(tmp_path).read_bytes()
+    Path(tmp_path).unlink(missing_ok=True)
+    return audio_bytes
+
+
+# ─── Health Endpoint ────────────────────────────────────────────────────────────
 
 class TestHealthEndpoint:
     """Tests for the /health endpoint."""
@@ -128,24 +156,21 @@ class TestDatabaseIntegrity:
 
 
 class TestQueryEndpoint:
-    """Tests for the /query stub endpoint."""
+    """Tests for the /query endpoint with real transcription (Phase 3)."""
 
-    def test_query_returns_200(self, client):
-        """Query endpoint should accept an audio file and return 200."""
-        # Create a dummy audio file
-        dummy_audio = b"fake audio content"
+    def test_query_returns_200(self, client, valid_audio_bytes):
+        """Query endpoint should accept a valid audio file and return 200."""
         response = client.post(
             "/query",
-            files={"audio": ("test.webm", dummy_audio, "audio/webm")},
+            files={"audio": ("test.wav", valid_audio_bytes, "audio/wav")},
         )
         assert response.status_code == 200
 
-    def test_query_returns_query_result(self, client):
+    def test_query_returns_query_result(self, client, valid_audio_bytes):
         """Query response should match QueryResult schema."""
-        dummy_audio = b"fake audio content"
         response = client.post(
             "/query",
-            files={"audio": ("test.webm", dummy_audio, "audio/webm")},
+            files={"audio": ("test.wav", valid_audio_bytes, "audio/wav")},
         )
         data = response.json()
         assert "rows" in data
@@ -154,3 +179,12 @@ class TestQueryEndpoint:
         assert "sql" in data
         assert "transcript" in data
         assert len(data["rows"]) > 0
+
+    def test_query_transcript_is_string(self, client, valid_audio_bytes):
+        """Transcript field should be a string (may be empty for silence)."""
+        response = client.post(
+            "/query",
+            files={"audio": ("test.wav", valid_audio_bytes, "audio/wav")},
+        )
+        data = response.json()
+        assert isinstance(data["transcript"], str)

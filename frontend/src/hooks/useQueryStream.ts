@@ -13,7 +13,8 @@ export function useQueryStream() {
 
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'query.webm');
+      const extension = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      formData.append('audio', audioBlob, `query.${extension}`);
 
       // Uses the proxy configured in vite.config.ts
       const res = await fetch('/query', {
