@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ──────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-surface-900: #000000;
+  --color-surface-800: #0a0a0a;
+  --color-surface-700: #141414;
+  --color-surface-600: #1e1e1e;
+  --color-surface-500: #2a2a2a;
+
+  --color-accent-primary: #14b8a6;
+  --color-accent-secondary: #0d9488;
+  --color-accent-glow: #2dd4bf;
+  --color-accent-danger: #ef4444;
+  --color-accent-success: #10b981;
+
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a3a3a3;
+  --color-text-muted: #737373;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background: #000000;
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Layout States ───────────────────────────────────────────────────────────── */
+
+/* Centered state: mic button is hero, dead center of viewport */
+.layout-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Active state: mic moves to top-right, results take main area */
+.layout-active {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+}
+
+.layout-active .top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.layout-active .results-area {
+  flex: 1;
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Mic Button ──────────────────────────────────────────────────────────────── */
+
+.mic-button {
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-accent-primary);
+  box-shadow: 0 0 40px rgba(20, 184, 166, 0.2);
+}
+
+/* Large mic: centered state */
+.mic-button.mic-large {
+  width: 140px;
+  height: 140px;
+}
+
+/* Small mic: top-right corner state */
+.mic-button.mic-small {
+  width: 56px;
+  height: 56px;
+}
+
+.mic-button:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 60px rgba(20, 184, 166, 0.35);
+}
+
+.mic-button:active {
+  transform: scale(0.96);
+}
+
+.mic-button.recording {
+  background: var(--color-accent-danger);
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+  animation: pulse-recording 2s ease-in-out infinite;
+}
+
+.mic-button.processing {
+  background: var(--color-surface-600);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Outer glow ring */
+.mic-button::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid rgba(20, 184, 166, 0.25);
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+.mic-button.recording::before {
+  border-color: rgba(239, 68, 68, 0.35);
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+
+.mic-button.processing::before {
+  border-color: rgba(100, 116, 139, 0.2);
+  animation: none;
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(239, 68, 68, 0.5);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Utility Classes ─────────────────────────────────────────────────────────── */
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Waveform Canvas ─────────────────────────────────────────────────────────── */
+
+.waveform-container {
+  width: 100%;
+  max-width: 280px;
+  height: 56px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ─── Response Area ───────────────────────────────────────────────────────────── */
+
+.response-area {
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-500) transparent;
+}
+
+.response-area::-webkit-scrollbar {
+  width: 5px;
+}
+
+.response-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.response-area::-webkit-scrollbar-thumb {
+  background: var(--color-surface-500);
+  border-radius: 3px;
+}
