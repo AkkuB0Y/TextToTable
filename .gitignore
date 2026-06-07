@@ -12,6 +12,8 @@ backend/db/app.db-wal
 **/dist/
 .env
 .env.local
+frontend/.env*
+*.tsbuildinfo
 
 # macOS / System
 .DS_Store

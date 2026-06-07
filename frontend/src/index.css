@@ -1,111 +1,289 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* ─── Design Tokens ──────────────────────────────────────────────────────────── */
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+@theme {
+  --color-surface-900: #0a0a1a;
+  --color-surface-800: #111128;
+  --color-surface-700: #1a1a3e;
+  --color-surface-600: #242454;
+  --color-surface-500: #2e2e6a;
+
+  --color-accent-primary: #7c3aed;
+  --color-accent-secondary: #06b6d4;
+  --color-accent-glow: #a78bfa;
+  --color-accent-danger: #ef4444;
+  --color-accent-success: #10b981;
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {
-  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-surface-900) 0%, #0f0f2e 40%, #150a30 70%, var(--color-surface-900) 100%);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+/* ─── Glassmorphism ───────────────────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(17, 17, 40, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 1.5rem;
+}
+
+.glass-subtle {
+  background: rgba(17, 17, 40, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+}
+
+/* ─── Mic Button ──────────────────────────────────────────────────────────────── */
+
+.mic-button {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, var(--color-accent-primary), #5b21b6);
+  box-shadow:
+    0 0 30px rgba(124, 58, 237, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.mic-button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 50px rgba(124, 58, 237, 0.5),
+    0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.mic-button:active {
+  transform: scale(0.97);
+}
+
+.mic-button.recording {
+  background: linear-gradient(135deg, var(--color-accent-danger), #dc2626);
+  box-shadow:
+    0 0 40px rgba(239, 68, 68, 0.4),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: pulse-recording 2s ease-in-out infinite;
+}
+
+.mic-button.processing {
+  background: linear-gradient(135deg, var(--color-surface-600), var(--color-surface-500));
+  cursor: not-allowed;
+}
+
+/* Outer glow ring */
+.mic-button::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(124, 58, 237, 0.3);
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+.mic-button.recording::before {
+  border-color: rgba(239, 68, 68, 0.4);
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+
+.mic-button.processing::before {
+  border-color: rgba(100, 116, 139, 0.3);
+  animation: none;
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0;
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow:
+      0 0 40px rgba(239, 68, 68, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 60px rgba(239, 68, 68, 0.6),
+      0 8px 40px rgba(0, 0, 0, 0.4);
   }
 }
-p {
-  margin: 0;
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes title-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* ─── Utility Classes ─────────────────────────────────────────────────────────── */
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(124, 58, 237, 0) 0%,
+    rgba(124, 58, 237, 0.15) 50%,
+    rgba(124, 58, 237, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.title-gradient {
+  background: linear-gradient(270deg, var(--color-accent-primary), var(--color-accent-secondary), var(--color-accent-glow));
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: title-gradient 6s ease infinite;
+}
+
+/* ─── Waveform Canvas ─────────────────────────────────────────────────────────── */
+
+.waveform-container {
+  width: 100%;
+  max-width: 320px;
+  height: 64px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Response Area ───────────────────────────────────────────────────────────── */
+
+.response-area {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-500) transparent;
+}
+
+.response-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.response-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.response-area::-webkit-scrollbar-thumb {
+  background: var(--color-surface-500);
+  border-radius: 3px;
+}
+
+/* ─── Background Decoration ───────────────────────────────────────────────────── */
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.bg-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--color-accent-primary);
+  top: -100px;
+  right: -100px;
+}
+
+.bg-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--color-accent-secondary);
+  bottom: -50px;
+  left: -50px;
 }
