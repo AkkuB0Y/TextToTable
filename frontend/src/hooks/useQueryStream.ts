@@ -36,10 +36,17 @@ export function useQueryStream() {
     }
   };
 
+  const reset = () => {
+    setResponse(null);
+    setError(null);
+    setIsProcessing(false);
+  };
+
   return {
     isProcessing,
     response,
     error,
     sendQuery,
+    reset,
   };
 }
