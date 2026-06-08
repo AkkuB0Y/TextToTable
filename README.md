@@ -1,8 +1,8 @@
-# 🎤 TextoAnalytics — Voice-to-Dashboard
+# 🎤 TextToTable — Voice-to-Dashboard
 
 > Speak a question. Get a dashboard.
 
-TextoAnalytics turns natural language voice queries into instant, interactive data dashboards. Ask _"show me revenue by region for last quarter"_ and watch a clean bar chart appear in seconds — complete with a plain-English summary and the underlying SQL.
+TextToTable turns natural language voice queries into instant, interactive data dashboards. Ask _"show me revenue by region for last quarter"_ and watch a clean bar chart appear in seconds — complete with a plain-English summary and the underlying SQL.
 
 ---
 
