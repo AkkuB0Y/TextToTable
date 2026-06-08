@@ -58,7 +58,8 @@ export function useAudioRecorder() {
       }
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm;codecs=opus';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         chunksRef.current = [];
         resolve(blob);
       };
