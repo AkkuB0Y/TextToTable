@@ -3,6 +3,7 @@ Voice-to-Dashboard — FastAPI backend entry point.
 
 Phase 1: Health check, DB setup, query stub.
 Phase 3: Whisper transcription + text normalization.
+Phase 4: Claude SQL generation + safe execution.
 """
 
 from __future__ import annotations
@@ -18,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import HealthResponse, QueryResult, VizSpec, VizType
 from pipeline.transcriber import transcribe, preload_model
 from pipeline.normalizer import normalize
+from pipeline.agent import generate_sql, get_schema_context
+from pipeline.executor import safe_execute
 
 # ─── Database ───────────────────────────────────────────────────────────────────
 
@@ -59,6 +62,9 @@ async def lifespan(app: FastAPI):
     """Application startup/shutdown lifecycle."""
     ensure_db()
     preload_model()  # Phase 3: pre-warm Whisper so first query is fast
+    # Phase 4: pre-cache schema context for Claude
+    get_schema_context(DB_PATH)
+    print("🧠 Schema context loaded for Claude agent")
     yield
 
 
@@ -67,7 +73,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Voice-to-Dashboard API",
     description="Speak a question, get a dashboard back.",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
@@ -107,8 +113,13 @@ async def query_dashboard(audio: UploadFile = File(...)):
     """
     Process a voice query and return dashboard data.
 
-    Phase 3: transcribes audio via Whisper, normalizes the text.
-    Still returns hardcoded viz data — Phase 4 will add SQL generation.
+    Phase 4 pipeline:
+    1. Save audio → temp file
+    2. Transcribe with Whisper
+    3. Normalize transcript (remove fillers)
+    4. Generate SQL via Claude
+    5. Execute SQL safely
+    6. Return results with basic viz spec
     """
     # ── Step 1: Save uploaded audio to a temp file ──────────────────────────
     suffix = Path(audio.filename or "query.webm").suffix or ".webm"
@@ -127,32 +138,134 @@ async def query_dashboard(audio: UploadFile = File(...)):
         print(f"✨ Cleaned transcript: {cleaned_transcript}")
 
     finally:
-        # ── Step 4: Clean up temp file ──────────────────────────────────────
+        # Clean up temp audio file
         Path(tmp_path).unlink(missing_ok=True)
 
-    # Phase 3: Return real transcript with stub viz data.
-    # Phase 4+ will replace the hardcoded rows with real SQL results.
-    sample_rows = [
-        {"region": "North America", "total_revenue": 125430.50, "order_count": 5200},
-        {"region": "Europe", "total_revenue": 98210.75, "order_count": 4100},
-        {"region": "Asia Pacific", "total_revenue": 67890.25, "order_count": 2800},
-        {"region": "Latin America", "total_revenue": 34560.00, "order_count": 1400},
-        {"region": "Middle East & Africa", "total_revenue": 12340.80, "order_count": 500},
-    ]
+    # ── Step 4: Generate SQL via Claude ─────────────────────────────────────
+    schema_ctx = get_schema_context(DB_PATH)
+    try:
+        sql, explanation = generate_sql(cleaned_transcript, schema_ctx)
+    except RuntimeError as e:
+        # API key not set or other agent error — return graceful error
+        print(f"⚠️  Agent error: {e}")
+        return QueryResult(
+            rows=[],
+            columns=[],
+            viz_spec=VizSpec(
+                type=VizType.KPI,
+                title="Configuration Error",
+                summary=str(e),
+            ),
+            sql="",
+            transcript=cleaned_transcript,
+        )
+    print(f"🔍 Generated SQL: {sql}")
+    print(f"💡 Explanation: {explanation}")
+
+    # Handle unanswerable queries
+    if sql.strip().upper() == "UNANSWERABLE":
+        return QueryResult(
+            rows=[],
+            columns=[],
+            viz_spec=VizSpec(
+                type=VizType.KPI,
+                title="Unable to Answer",
+                summary=explanation or "This question cannot be answered with the available data.",
+            ),
+            sql="UNANSWERABLE",
+            transcript=cleaned_transcript,
+        )
+
+    # ── Step 5: Execute SQL safely ──────────────────────────────────────────
+    try:
+        result = safe_execute(sql, DB_PATH)
+    except Exception as e:
+        print(f"❌ SQL execution failed: {e}")
+        return QueryResult(
+            rows=[],
+            columns=[],
+            viz_spec=VizSpec(
+                type=VizType.KPI,
+                title="Query Error",
+                summary=f"The generated SQL could not be executed: {str(e)[:200]}",
+            ),
+            sql=sql,
+            transcript=cleaned_transcript,
+        )
+
+    # ── Step 6: Build response ──────────────────────────────────────────────
+    rows = result["rows"]
+    columns = result["columns"]
+    actual_sql = result["sql"]  # might be fixed SQL from retry
+
+    # Basic viz type selection (Phase 5 will make this smarter)
+    viz_type = _pick_basic_viz_type(columns, rows)
+
+    # Identify numeric columns for y_keys
+    numeric_cols = []
+    if rows:
+        for col in columns:
+            val = rows[0].get(col)
+            if isinstance(val, (int, float)):
+                numeric_cols.append(col)
+
+    truncation_note = ""
+    if result.get("truncated"):
+        truncation_note = f" (showing top {result['row_count']} of more results)"
 
     return QueryResult(
-        rows=sample_rows,
-        columns=["region", "total_revenue", "order_count"],
+        rows=rows,
+        columns=columns,
         viz_spec=VizSpec(
-            type=VizType.BAR,
-            x_key="region",
-            y_keys=["total_revenue"],
-            title="Revenue by Region",
-            summary="North America leads with $125K in total revenue, followed by Europe at $98K.",
+            type=viz_type,
+            x_key=columns[0] if columns else None,
+            y_keys=numeric_cols[:2],
+            title=explanation or cleaned_transcript,
+            summary=f"{explanation}{truncation_note}" if explanation else cleaned_transcript,
         ),
-        sql="SELECT region, SUM(amount) as total_revenue, COUNT(*) as order_count FROM orders GROUP BY region",
+        sql=actual_sql,
         transcript=cleaned_transcript,
     )
+
+
+def _pick_basic_viz_type(columns: list[str], rows: list[dict]) -> VizType:
+    """
+    Simple heuristic for chart type selection.
+    Phase 5 will replace this with the full viz_selector.py logic.
+    """
+    n_rows = len(rows)
+    n_cols = len(columns)
+
+    if n_rows == 0:
+        return VizType.KPI
+
+    # Single aggregate result → KPI card
+    if n_rows == 1 and n_cols <= 3:
+        return VizType.KPI
+
+    # Check for date-like columns
+    date_keywords = {"date", "month", "week", "year", "created_at", "signup_date", "day"}
+    has_date = any(c.lower() in date_keywords for c in columns)
+
+    # Check for category-like first column
+    has_category = n_cols >= 2 and isinstance(rows[0].get(columns[0]), str)
+
+    # Check for numeric columns
+    numeric_cols = [
+        c for c in columns
+        if rows and isinstance(rows[0].get(c), (int, float))
+    ]
+
+    if has_date and numeric_cols:
+        return VizType.LINE
+    elif has_category and len(numeric_cols) == 1 and n_rows <= 8:
+        return VizType.PIE
+    elif has_category and numeric_cols:
+        return VizType.BAR
+    elif n_rows > 50:
+        return VizType.TABLE
+    else:
+        return VizType.BAR
 
 
 # ─── Run directly ──────────────────────────────────────────────────────────────

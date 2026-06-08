@@ -156,7 +156,11 @@ class TestDatabaseIntegrity:
 
 
 class TestQueryEndpoint:
-    """Tests for the /query endpoint with real transcription (Phase 3)."""
+    """Tests for the /query endpoint with real transcription (Phase 3 + 4).
+
+    Without ANTHROPIC_API_KEY, the endpoint returns a graceful error response
+    (200 with empty rows). With the key, it returns full SQL results.
+    """
 
     def test_query_returns_200(self, client, valid_audio_bytes):
         """Query endpoint should accept a valid audio file and return 200."""
@@ -166,7 +170,7 @@ class TestQueryEndpoint:
         )
         assert response.status_code == 200
 
-    def test_query_returns_query_result(self, client, valid_audio_bytes):
+    def test_query_returns_query_result_schema(self, client, valid_audio_bytes):
         """Query response should match QueryResult schema."""
         response = client.post(
             "/query",
@@ -178,7 +182,6 @@ class TestQueryEndpoint:
         assert "viz_spec" in data
         assert "sql" in data
         assert "transcript" in data
-        assert len(data["rows"]) > 0
 
     def test_query_transcript_is_string(self, client, valid_audio_bytes):
         """Transcript field should be a string (may be empty for silence)."""
@@ -188,3 +191,4 @@ class TestQueryEndpoint:
         )
         data = response.json()
         assert isinstance(data["transcript"], str)
+
