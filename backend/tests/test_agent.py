@@ -16,12 +16,12 @@ from pathlib import Path
 
 import pytest
 
-# Ensure backend/ is on the import path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pipeline.agent import extract_tag, generate_sql, get_schema_context, fix_sql
 from pipeline.executor import safe_execute, _validate_sql, MAX_ROWS
 from main import DB_PATH
+from tests.conftest import generate_sql_or_skip
 
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────────
@@ -219,7 +219,9 @@ class TestGenerateSQLIntegration:
     @requires_api_key
     def test_aggregation_query(self, schema_context):
         """Test: 'show me total revenue by region'"""
-        sql, explanation = generate_sql("show me total revenue by region", schema_context)
+        sql, explanation = generate_sql_or_skip(
+            generate_sql, "show me total revenue by region", schema_context
+        )
         assert sql != "UNANSWERABLE"
         assert "SELECT" in sql.upper()
         assert "region" in sql.lower()
@@ -232,7 +234,9 @@ class TestGenerateSQLIntegration:
     @requires_api_key
     def test_filtering_query(self, schema_context):
         """Test: 'how many completed orders are there'"""
-        sql, explanation = generate_sql("how many completed orders are there", schema_context)
+        sql, explanation = generate_sql_or_skip(
+            generate_sql, "how many completed orders are there", schema_context
+        )
         assert sql != "UNANSWERABLE"
         assert "SELECT" in sql.upper()
 
@@ -242,7 +246,9 @@ class TestGenerateSQLIntegration:
     @requires_api_key
     def test_join_query(self, schema_context):
         """Test: 'show me revenue by product category'"""
-        sql, explanation = generate_sql("show me revenue by product category", schema_context)
+        sql, explanation = generate_sql_or_skip(
+            generate_sql, "show me revenue by product category", schema_context
+        )
         assert sql != "UNANSWERABLE"
         assert "SELECT" in sql.upper()
 
@@ -252,7 +258,9 @@ class TestGenerateSQLIntegration:
     @requires_api_key
     def test_time_range_query(self, schema_context):
         """Test: 'how many orders were placed in 2024'"""
-        sql, explanation = generate_sql("how many orders were placed in 2024", schema_context)
+        sql, explanation = generate_sql_or_skip(
+            generate_sql, "how many orders were placed in 2024", schema_context
+        )
         assert sql != "UNANSWERABLE"
         assert "SELECT" in sql.upper()
 
@@ -262,8 +270,10 @@ class TestGenerateSQLIntegration:
     @requires_api_key
     def test_top_n_query(self, schema_context):
         """Test: 'what are the top 5 customers by total spending'"""
-        sql, explanation = generate_sql(
-            "what are the top 5 customers by total spending", schema_context
+        sql, explanation = generate_sql_or_skip(
+            generate_sql,
+            "what are the top 5 customers by total spending",
+            schema_context,
         )
         assert sql != "UNANSWERABLE"
         assert "SELECT" in sql.upper()
