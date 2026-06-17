@@ -21,7 +21,7 @@ function App() {
                 onClick={reset}
                 className="text-lg font-semibold tracking-wide text-white py-3 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
               >
-                TextTo<span className="text-accent-primary">Analytics</span>
+                TextTo<span className="text-accent-primary">Table</span>
               </button>
             </div>
             <AudioRecorder
@@ -77,7 +77,7 @@ function App() {
         <main className="layout-centered">
           <div className="flex flex-col items-center gap-3 mb-20 animate-fade-in-up">
             <span className="text-2xl font-bold tracking-wide text-white">
-              TextTo<span className="text-accent-primary">Analytics</span>
+              TextTo<span className="text-accent-primary">Table</span>
             </span>
             <p className="text-sm text-neutral-500">
               Ask questions about your data in plain English.
